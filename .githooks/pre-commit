@@ -1,2 +1,25 @@
 #!/bin/sh
-echo "pre-commit hook running"
+
+VERSION_FILE="version.txt"
+
+# 讀取目前版號
+version=$(cat $VERSION_FILE)
+
+# 拆解 major.minor.patch
+IFS='.' read -r major minor patch <<< "$version"
+
+# patch +1
+patch=$((patch+1))
+
+# 組回新的版號
+new_version="$major.$minor.$patch"
+
+# 寫回 version.txt
+echo $new_version > $VERSION_FILE
+
+# 自動加入 git staged
+git add $VERSION_FILE
+
+echo "Version updated to $new_version"
+
+exit 0
