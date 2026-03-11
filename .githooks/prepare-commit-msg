@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# commit message 檔案
+MSG_FILE=$1
+
+# 不修改 merge 或 tag commit
+COMMIT_SOURCE=$2
+if [ "$COMMIT_SOURCE" = "merge" ] || [ "$COMMIT_SOURCE" = "commit" ]; then
+  exit 0
+fi
+
+# 讀取版號
+VERSION=$(cat version.txt)
+
+# 將版號加在最前面
+sed -i.bak "1s/^/[v$VERSION] /" "$MSG_FILE"
+rm "$MSG_FILE.bak"
