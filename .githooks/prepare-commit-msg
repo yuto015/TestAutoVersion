@@ -8,5 +8,8 @@ fi
 
 VERSION=$(cat version.txt)
 
-sed -i.bak "1s/^^/[v$VERSION] /" "$MSG_FILE"
-rm "$MSG_FILE.bak"
+FIRST=$(head -1 "$MSG_FILE")
+tail -n +2 "$MSG_FILE" > "$MSG_FILE.tmp"
+echo "[v$VERSION] $FIRST" > "$MSG_FILE"
+cat "$MSG_FILE.tmp" >> "$MSG_FILE"
+rm "$MSG_FILE.tmp"
