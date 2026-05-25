@@ -1,7 +1,10 @@
 @echo off
 setlocal
 
-git rev-parse --git-dir >nul 2>&1
+set "REPO=%~dp0"
+set "REPO=%REPO:~0,-1%"
+
+git -C "%REPO%" rev-parse --git-dir >nul 2>&1
 if errorlevel 1 (
     echo Error: Not a git repository. Please run git init first.
     pause & exit /b 1
@@ -9,7 +12,8 @@ if errorlevel 1 (
 
 set "PS=%TEMP%\install-hooks-%RANDOM%.ps1"
 
-echo $d = '.githooks'                                                        > "%PS%"
+echo Set-Location '%REPO%'                                                   > "%PS%"
+echo $d = '.githooks'                                                        >> "%PS%"
 echo New-Item -ItemType Directory -Force -Path $d ^| Out-Null               >> "%PS%"
 echo $n = [char]10                                                           >> "%PS%"
 echo $pc = @(                                                                >> "%PS%"
@@ -26,7 +30,7 @@ echo   'git add $VERSION_FILE', '',                                          >> 
 echo   'echo "Version updated to $new_version"', '',                         >> "%PS%"
 echo   'exit 0', ''                                                          >> "%PS%"
 echo )                                                                       >> "%PS%"
-echo [IO.File]::WriteAllText("$d/pre-commit",($pc -join $n),[Text.Encoding]::UTF8) >> "%PS%"
+echo [IO.File]::WriteAllText("$d/pre-commit",($pc -join $n),(New-Object Text.UTF8Encoding $false)) >> "%PS%"
 echo $pm = @(                                                                >> "%PS%"
 echo   '#!/bin/sh', '',                                                      >> "%PS%"
 echo   'MSG_FILE=$1',                                                        >> "%PS%"
@@ -37,12 +41,14 @@ echo   'VERSION=$(cat version.txt)', '',                                     >> 
 echo   'sed -i.bak "1s/^^/[v$VERSION] /" "$MSG_FILE"',                      >> "%PS%"
 echo   'rm "$MSG_FILE.bak"', ''                                              >> "%PS%"
 echo )                                                                       >> "%PS%"
-echo [IO.File]::WriteAllText("$d/prepare-commit-msg",($pm -join $n),[Text.Encoding]::UTF8) >> "%PS%"
+echo [IO.File]::WriteAllText("$d/prepare-commit-msg",($pm -join $n),(New-Object Text.UTF8Encoding $false)) >> "%PS%"
 echo if (-not (Test-Path 'version.txt')) {                                   >> "%PS%"
-echo   [IO.File]::WriteAllText('version.txt','1.0.0',[Text.Encoding]::UTF8) >> "%PS%"
+echo   [IO.File]::WriteAllText('version.txt','1.0.0',(New-Object Text.UTF8Encoding $false)) >> "%PS%"
 echo }                                                                       >> "%PS%"
-echo git config core.hooksPath .githooks                                    >> "%PS%"
-echo bash -c "chmod +x $d/pre-commit $d/prepare-commit-msg"                >> "%PS%"
+echo git config core.hooksPath .githooks                                     >> "%PS%"
+echo $gb = (Get-Command git).Source -replace 'git\.exe$','bash.exe'         >> "%PS%"
+echo if (-not (Test-Path $gb)) { $gb = $gb -replace '\\cmd\\','\\bin\\' }   >> "%PS%"
+echo ^& $gb -c "chmod +x .githooks/pre-commit .githooks/prepare-commit-msg" >> "%PS%"
 echo Write-Host 'Git hooks installed!' -ForegroundColor Green                >> "%PS%"
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS%"
